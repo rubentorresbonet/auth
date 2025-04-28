@@ -173,10 +173,9 @@ func (a *API) internalExternalProviderCallback(w http.ResponseWriter, r *http.Re
 		return err
 	}
 
+	// We've guaranteed at least one entry in Facebook provider.
+	// No need to error here anymore.
 	userData := data.userData
-	if len(userData.Emails) <= 0 {
-		return apierrors.NewInternalServerError("Error getting user email from external provider")
-	}
 	userData.Metadata.EmailVerified = false
 	for _, email := range userData.Emails {
 		if email.Primary {

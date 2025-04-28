@@ -9,6 +9,9 @@ import (
 
 	"github.com/supabase/auth/internal/conf"
 	"golang.org/x/oauth2"
+
+	"fmt"
+    "github.com/sirupsen/logrus"
 )
 
 const IssuerFacebook = "https://www.facebook.com"
@@ -85,13 +88,23 @@ func (p facebookProvider) GetUserData(ctx context.Context, tok *oauth2.Token) (*
 		return nil, err
 	}
 
-	data := &UserProvidedData{}
-	if u.Email != "" {
-		data.Emails = []Email{{
-			Email:    u.Email,
-			Verified: true,
+	// Always return at least one email object.
+	// If FB didn’t give us an email, fabricate a fallback.
+	fbEmail := u.Email
+	verified := true
+	if fbEmail == "" {
+		fbEmail = fmt.Sprintf("%s@facebook.local", u.ID)
+		verified = false
+		logrus.
+			WithField("component", "facebook-provider").
+			Warnf("facebook returned no email, falling back to %q", fbEmail)
+	}
+	data :=&UserProvidedData{
+		Emails: []Email{{
+			Email:    fbEmail,
+			Verified: verified,
 			Primary:  true,
-		}}
+		}},
 	}
 
 	data.Metadata = &Claims{
